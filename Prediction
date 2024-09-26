@@ -1,0 +1,93 @@
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+def classify_epio_score(epio_score):
+    if epio_score < 95:
+        return "Least Significant"
+    elif 95 <= epio_score <= 105:
+        return "Moderately Significant"
+    else:
+        return "Significant"
+
+def predict_good_target(epio_score, curriculum_flexibility, institution_type, budget_sensitivity, tech_infrastructure, global_partnerships, past_tech_adoption, model):
+
+    epio_significance = classify_epio_score(epio_score)
+
+
+    input_data = pd.DataFrame({
+        'EPIO_Significance': [epio_significance],
+        'Curriculum_Flexibility': [curriculum_flexibility],
+        'Institution_Type': [institution_type],
+        'Budget_Sensitivity': [budget_sensitivity],
+        'Technical_Infrastructure': [tech_infrastructure],
+        'Global_Partnerships': [global_partnerships],
+        'Past_Tech_Adoption': [past_tech_adoption]
+    })
+
+    
+    input_data = pd.get_dummies(input_data, columns=['EPIO_Significance'], drop_first=True)
+
+  
+    input_data = input_data.reindex(columns=X.columns, fill_value=0)
+
+  
+    prediction = model.predict(input_data)
+
+    return "Good Target" if prediction[0] == 1 else "Not a Good Target"
+
+data = {
+    'EPIO_Score': [110, 92, 100, 105, 95, 94, 99, 105, 109, 92],
+    'Curriculum_Flexibility': [1, 0, 1, 0, 1, 1, 1, 0, 0, 1],
+    'Institution_Type': [1, 0, 1, 0, 1, 1, 1, 0, 0, 1],
+    'Budget_Sensitivity': [0, 1, 0, 1, 0, 0, 0, 1, 1, 0],
+    'Technical_Infrastructure': [1, 1, 1, 0, 1, 1, 1, 0, 0, 1],
+    'Global_Partnerships': [1, 0, 1, 0, 1, 1, 1, 0, 0, 1],
+    'Past_Tech_Adoption': [1, 0, 1, 0, 1, 1, 1, 0, 0, 1],
+    'Good_Target': [1, 0, 1, 0, 1, 1, 1, 0, 0, 1]
+}
+
+df = pd.DataFrame(data)
+df['EPIO_Significance'] = df['EPIO_Score'].apply(classify_epio_score)
+
+df = df.drop(columns='EPIO_Score')
+
+df = pd.get_dummies(df, columns=['EPIO_Significance'], drop_first=True)
+
+X = df.drop(columns='Good_Target')
+y = df['Good_Target']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=52)
+
+model = RandomForestClassifier(random_state=52)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
+
+def get_user_input():
+    print("Enter the following details for the B-School:\n")
+
+    epio_score = float(input("EPIO Score (801-111): "))
+    curriculum_flexibility = int(input("Curriculum Flexibility (1 for Flexible, 0 for Not): "))
+    institution_type = int(input("Institution Type (1 for Private, 0 for Public): "))
+    budget_sensitivity = int(input("Budget Sensitivity (1 for Sensitive, 0 for Not): "))
+    tech_infrastructure = int(input("Technical Infrastructure (1 for Good, 0 for Poor): "))
+    global_partnerships = int(input("Global Partnerships (1 for Strong, 0 for Weak): "))
+    past_tech_adoption = int(input("Past Tech Adoption (1 for Yes, 0 for No): "))
+
+    
+    return (epio_score, curriculum_flexibility, institution_type, budget_sensitivity, tech_infrastructure, global_partnerships, past_tech_adoption)
+
+if __name__ == "__main__":
+
+    print(f"\nModel trained with accuracy: {accuracy * 100:.2f}%\n")
+
+    inputs = get_user_input()
+
+    result = predict_good_target(*inputs, model=model)
+
+    print("\nPrediction: The B-School is a", result)
